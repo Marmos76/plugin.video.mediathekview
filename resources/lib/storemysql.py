@@ -90,7 +90,7 @@ class StoreMySQL(object):
             # pylint: disable=broad-except
             except Exception:
                 self.logger.info('Connected to server {}', self.settings.host)
-            self.conn.database = self.settings.database
+            self.conn.database = self.settings.database            
             ## check tables
             cursor.execute('SELECT * FROM status')
             cursor.fetchone()
@@ -1368,10 +1368,24 @@ END
             self.logger.error('=== DATABASE CREATION ERROR: {} ===', err)
             self.notifier.show_database_error(err)
             try:
-                if dbcreated:
-                    cursor.execute('DROP DATABASE `{}`'.format(
-                        self.settings.database))
-                    self.conn.commit()
+                if dbcreated:                    
+                    #-- delete only tables and precedures --#
+                    dbtables = ["channel","film","show","status" ] 
+                    dbprocedures = ["ftInsertChannel","ftInsertFilm","ftInsertShow","ftUpdateEnd","ftUpdateStart"]
+
+                    rmcmd_dic =	{
+                        'dbtable'         : "DROP TABLE IF EXISTS ",
+                        'dbprocedure' : "DROP PROCEDURE IF EXISTS " 
+                    }
+                    
+                    for table in dbtables: 
+                        cursor.execute('{} `{}` '.format( rmcmd_dic['dbtable'], table) )
+                        self.conn.commit()
+                    
+                    for proc in dbprocedures: 
+                        cursor.execute(' {} `{}` '.format( rmcmd_dic['dbprocedure'], proc) )
+                        self.conn.commit()
+                                        
                 if cursor is not None:
                     cursor.close()
                     del cursor
